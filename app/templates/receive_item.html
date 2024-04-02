@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Receive New Item</h2>
+    <form action="" method="post" class="needs-validation" novalidate>
+        <div class="form-group" style="position: relative;">
+            <label for="name">Name:</label>
+            <input type="text" class="form-control" id="name" name="name" required>
+            <div id="nameSearchResults" class="search-results"></div>
+            <div class="invalid-feedback">Please enter the item name.</div>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description:</label>
+            <input type="text" class="form-control" id="description" name="description">
+        </div>
+
+
+        <div class="form-group" style="position: relative;">
+            <label for="supplier_part_no">Supplier Part No.:</label>
+            <input type="text" class="form-control" id="supplier_part_no" name="supplier_part_no">
+            <div id="partNoSearchResults" class="search-results"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="invoice_no">Invoice No.:</label>
+            <input type="text" class="form-control" id="invoice_no" name="invoice_no">
+        </div>
+
+
+        <div class="form-group">
+            <label for="quantity">Quantity:</label>
+            <input type="number" class="form-control" id="quantity" name="quantity" required>
+            <div class="invalid-feedback">Please enter the quantity.</div>
+        </div>
+
+        <div class="form-group">
+            <label for="amount">Amount:</label>
+            <input type="number" step="0.01" class="form-control" id="amount" name="amount">
+        </div>
+
+         <!-- Supplier selection with modal trigger button -->
+        <div class="form-group">
+            <label for="supplier_id">Supplier:</label>
+            <div class="input-group mb-3">
+                <select class="form-control" id="supplier_id" name="supplier_id" required>
+                    <option value="">Select a Supplier</option>
+                    {% for supplier in suppliers %}
+                    <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="input-group-append">
+                    <button class="btn btn-outline-secondary" type="button" data-toggle="modal" data-target="#supplierModal">Add New</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category selection with modal trigger button -->
+        <div class="form-group">
+            <label for="category">Category:</label>
+            <div class="input-group mb-3">
+                <select class="form-control" id="category" name="category" required>
+                    <option value="">Select a category...</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}">{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+                <div class="input-group-append">
+                    <button class="btn btn-outline-secondary" type="button" data-toggle="modal" data-target="#categoryModal">Add New</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit button -->
+        <button type="submit" class="btn btn-primary">Receive</button>
+    </form>
+
+    <!-- Modals -->
+    <!-- Supplier Modal -->
+    <div class="modal fade" id="supplierModal" tabindex="-1" aria-labelledby="supplierModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="supplierModalLabel">Add New Supplier</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control mb-2" id="new_supplier_name" placeholder="Supplier Name">
+                    <input type="text" class="form-control mb-2" id="new_supplier_telephone_number" placeholder="Telephone Number">
+                    <input type="text" class="form-control mb-2" id="new_supplier_address" placeholder="Address">
+                    <input type="text" class="form-control mb-2" id="new_supplier_contact_person" placeholder="Contact Person">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="addNewSupplier()">Add Supplier</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div class="modal fade" id="categoryModal" tabindex="-1" aria-labelledby="categoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="categoryModalLabel">Add New Category</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control" id="new_category_name" placeholder="Category Name">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="addNewCategory()">Add Category</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/add_inventory_script.js') }}"></script>
+
+<!-- Bootstrap JS, ensure it's included if not already loaded in base.html -->
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
+{% endblock %}

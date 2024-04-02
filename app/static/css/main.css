@@ -1,0 +1,22 @@
+.search-results {
+    position: absolute;
+    z-index: 1000;
+    background: white;
+    width: calc(100% - 30px); /* Assuming 15px padding on both sides of the form-group */
+    max-height: 200px;
+    overflow-y: auto; /* Enable scrolling for many results */
+    border: 1px solid #ccc;
+    border-top: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    display: none; /* Hide by default */
+}
+
+.search-results div {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #ccc;
+}
+
+.search-results div:hover {
+    background-color: #f2f2f2;
+}

@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-3">Inventory List</h2>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th>Booked Out</th>
+                    <th>Category</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.description }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.booked_out }}</td>
+                    <td>{{ item.category }}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm book-out-btn" data-item-id="{{ item.id }}" data-toggle="modal" data-target="#bookOutModal">Book Out</button>
+                        {% if item.booked_out > 0 %}
+                        <button class="btn btn-success btn-sm book-in-btn" data-item-id="{{ item.id }}" data-toggle="modal" data-target="#bookInModal">Book In</button>
+                        {% endif %}
+                        <a href="{{ url_for('inventory.write_off_item', item_id=item.id) }}" class="btn btn-danger btn-sm">Write Off</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Book Out Modal -->
+    <div class="modal fade" id="bookOutModal" tabindex="-1" aria-labelledby="bookOutModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="bookOutForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="bookOutModalLabel">Book Out Item</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="item_id" id="bookOutItemId" value="">
+                        <div class="form-group">
+                            <label for="bookedOutQuantity">Quantity:</label>
+                            <input type="number" class="form-control" id="bookedOutQuantity" name="booked_out_quantity" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookedOutBy">Booked Out By:</label>
+                            <input type="text" class="form-control" id="bookedOutBy" name="booked_out_by" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="bookedOutTo">Booked Out To:</label>
+                            <input type="text" class="form-control" id="bookedOutTo" name="booked_out_to" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary">Book Out</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="bookInModal" tabindex="-1" aria-labelledby="bookInModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form id="bookInForm">
+        <div class="modal-header">
+          <h5 class="modal-title" id="bookInModalLabel">Book In Item</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="item_id" id="bookInItemId" value="">
+          <div class="form-group">
+            <label for="usageSelect">Select Usage Entry:</label>
+
+            <select id="usageSelect" name="usage_id" class="form-control" required>
+              <!-- Options will be dynamically loaded here -->
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-success">Book In</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/inventory_list.js') }}"></script>
+{% endblock %}
