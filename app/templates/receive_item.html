@@ -3,7 +3,7 @@
 {% block content %}
 <div class="container mt-5">
     <h2 class="mb-4">Receive New Item</h2>
-    <form action="" method="post" class="needs-validation" novalidate>
+    <form action="" method="post" class="needs-validation" novalidate enctype="multipart/form-data">
         <div class="form-group" style="position: relative;">
             <label for="name">Name:</label>
             <input type="text" class="form-control" id="name" name="name" required>
@@ -21,6 +21,21 @@
             <label for="supplier_part_no">Supplier Part No.:</label>
             <input type="text" class="form-control" id="supplier_part_no" name="supplier_part_no">
             <div id="partNoSearchResults" class="search-results"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="receive_type">Receive Type:</label>
+            <select id="receive_type" name="receive_type" class="form-control" required>
+                <option value="">Select Receive Type</option>
+                {% for r_type in receive_types %}
+                    <option value="{{ r_type }}">{{ r_type }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="comments">Comments:</label>
+            <textarea class="form-control" id="comments" name="comments" rows="3"></textarea>
         </div>
 
         <div class="form-group">
@@ -54,7 +69,9 @@
                     <button class="btn btn-outline-secondary" type="button" data-toggle="modal" data-target="#supplierModal">Add New</button>
                 </div>
             </div>
-        </div>
+
+
+
 
         <!-- Category selection with modal trigger button -->
         <div class="form-group">
@@ -71,6 +88,29 @@
                 </div>
             </div>
         </div>
+
+          </div>
+        <div class="form-group" id="itemImageDisplay">
+    <!-- Dynamic content based on if an image exists -->
+        </div>
+
+        <!-- Initially hidden image upload input -->
+        <div class="form-group" id="imageUploadForm" style="display: none;">
+            <label for="item_image">Item Image:</label>
+            <input type="file" class="form-control-file" id="item_image" name="item_image">
+        </div>
+
+        <div class="form-group">
+            <label for="bin_assignment">Bin Assignment:</label>
+            <input type="text" class="form-control" id="bin_assignment" name="bin_assignment" placeholder="Enter bin location (optional)">
+        </div>
+
+        <!-- New form group for Bulk Bin Assignment -->
+        <div class="form-group">
+            <label for="bulk_bin_assignment">Bulk Bin Assignment:</label>
+            <input type="text" class="form-control" id="bulk_bin_assignment" name="bulk_bin_assignment" placeholder="Enter bulk bin location (optional)">
+        </div>
+
 
         <!-- Submit button -->
         <button type="submit" class="btn btn-primary">Receive</button>

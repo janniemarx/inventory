@@ -18,7 +18,7 @@
             <tbody>
                 {% for item in items %}
                 <tr>
-                    <td>{{ item.name }}</td>
+                    <td><a href="{{ url_for('inventory.item_details', item_id=item.id) }}">{{ item.name }}</a></td>
                     <td>{{ item.description }}</td>
                     <td>{{ item.quantity }}</td>
                     <td>{{ item.booked_out }}</td>

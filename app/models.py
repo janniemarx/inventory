@@ -14,6 +14,10 @@ class Item(db.Model):
     amount = db.Column(db.Numeric(precision=10, scale=2))
     booked_out = db.Column(db.Integer, default=0)  # New field to track booked out quantity
     transactions = db.relationship('Transaction', backref='item', lazy=True)
+    image_filename = db.Column(db.String(256))
+    bin_assignment = db.Column(db.String(128))  # New field for bin assignment
+    bulk_bin_assignment = db.Column(db.String(128))
+
 
 class Transaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -22,6 +26,8 @@ class Transaction(db.Model):
     quantity = db.Column(db.Integer)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     comments = db.Column(db.String(256))
+    doc_no = db.Column(db.String(64), nullable=True)
+    amount = db.Column(db.Numeric(precision=10, scale=2))
 
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)

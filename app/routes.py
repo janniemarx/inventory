@@ -1,9 +1,12 @@
-from datetime import datetime
-from flask import Blueprint, request, render_template, redirect, url_for, flash, jsonify
+from flask import Blueprint, request, render_template, redirect, url_for, flash, jsonify, current_app
 from decimal import Decimal
 from .models import Item, Transaction, Category, Supplier, Usage
 from . import db
 from flask import current_app as app
+import os
+from datetime import datetime, timedelta
+from werkzeug.utils import secure_filename
+from sqlalchemy import func
 
 bp = Blueprint('inventory', __name__)
 
@@ -28,50 +31,83 @@ def book_item(item_id):
         return redirect(url_for('inventory.index'))
     return render_template('book_item.html', item=item)
 
+
 @bp.route('/receive', methods=['GET', 'POST'])
 def receive_item():
-    suppliers = Supplier.query.all()  # Fetch suppliers for GET and POST requests
+    suppliers = Supplier.query.all()
+    receive_types = ['Replenish', 'Lost and Found', 'Opening Balance']
 
     if request.method == 'POST':
         name = request.form['name'].strip()
         supplier_part_no = request.form['supplier_part_no'].strip()
         quantity_received = request.form.get('quantity', type=int)
-        amount_received = Decimal(request.form.get('amount', type=str))  # Convert amount to string then to Decimal
+        amount_received = Decimal(request.form.get('amount', type=str))
+        receive_type = request.form['receive_type']
+        invoice_no = request.form.get('invoice_no', '').strip()
+        comments = request.form.get('comments', '').strip()
+        file = request.files.get('item_image')
+        bin_assignment = request.form.get('bin_assignment', '').strip()  # New field
+        bulk_bin_assignment = request.form.get('bulk_bin_assignment', '').strip()  # New field
 
-        # Check if the item already exists
+        # Image upload handling
+        upload_folder = os.path.join(current_app.root_path, current_app.config['UPLOAD_FOLDER'])
+        os.makedirs(upload_folder, exist_ok=True)
+
+        if file and file.filename:
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(upload_folder, filename)
+            try:
+                file.save(filepath)
+                flash('Image uploaded successfully.')
+            except Exception as e:
+                flash(f'Failed to save image: {e}')
+                return redirect(url_for('inventory.receive_item'))
+            image_filename = filename
+        else:
+            image_filename = None
+
         existing_item = Item.query.filter_by(name=name, supplier_part_no=supplier_part_no).first()
 
         if existing_item:
-            # Update existing item's quantity and amount
-            existing_total_amount = existing_item.amount * existing_item.quantity
-            new_total_amount = amount_received * quantity_received
             existing_item.quantity += quantity_received
-            existing_item.amount = (existing_total_amount + new_total_amount) / existing_item.quantity
-            transaction = Transaction(item_id=existing_item.id, type='receive', quantity=quantity_received)
-            db.session.add(transaction)
-            db.session.commit()
-            flash('Existing item quantity updated successfully.')
+            if image_filename:
+                existing_item.image_filename = image_filename
+            # Update the existing item's amount if provided
+            existing_item.amount = amount_received
         else:
-            # No existing item, create a new one
             new_item = Item(
                 name=name,
                 description=request.form.get('description', '').strip(),
                 quantity=quantity_received,
                 category=request.form.get('category', '').strip(),
                 supplier_part_no=supplier_part_no,
-                invoice_no=request.form.get('invoice_no', '').strip(),
-                amount=amount_received,  # Already a Decimal type
-                supplier_id=request.form.get('supplier_id', type=int)
+                amount=amount_received,
+                supplier_id=request.form.get('supplier_id', type=int),
+                invoice_no=invoice_no,
+                image_filename=image_filename,
+                bin_assignment=bin_assignment,  # Save new field
+                bulk_bin_assignment=bulk_bin_assignment  # Save new field
             )
             db.session.add(new_item)
-            db.session.commit()
-            flash('New item received successfully.')
 
+        db.session.commit()
+
+        # Now also pass the amount_received to the transaction
+        transaction = Transaction(
+            item_id=existing_item.id if existing_item else new_item.id,
+            type=f"Receive - {receive_type}",
+            quantity=quantity_received,
+            comments=comments,
+            doc_no=invoice_no,
+            amount=amount_received  # Include the amount in the transaction
+        )
+        db.session.add(transaction)
+        db.session.commit()
+
+        flash(f'Item "{name}" received successfully.')
         return redirect(url_for('inventory.index'))
 
-    # Render the form for GET requests or failed POST validation
-    return render_template('receive_item.html', suppliers=suppliers)
-
+    return render_template('receive_item.html', suppliers=suppliers, receive_types=receive_types)
 
 @bp.route('/write_off/<int:item_id>', methods=['GET', 'POST'])
 def write_off_item(item_id):
@@ -150,15 +186,17 @@ def search_items():
                     'name': item.name,
                     'description': item.description,
                     'supplier_part_no': item.supplier_part_no,
-                    'amount': str(item.amount), # Convert decimal to string
-                    'category': item.category, # Use the category string
-                    'supplier_id': item.supplier_id, # This should be correct based on your Item model
+                    'amount': str(item.amount),
+                    'category': item.category,
+                    'supplier_id': item.supplier_id,
+                    'image_filename': item.image_filename if item.image_filename else None,  # Include image filename
                 }
                 items_list.append(item_dict)
         return jsonify(items_list)
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({'error': 'An error occurred while searching items.'}), 500
+
 
 @bp.route('/book_out', methods=['POST'])
 def book_out_item():
@@ -211,3 +249,81 @@ def book_in_item(usage_id):
     else:
         flash('This usage record has already been booked in.', 'error')
     return redirect(url_for('inventory.index'))
+
+
+def filter_transactions(item_id, filter_type, start_date, end_date):
+    transactions_query = Transaction.query.filter(
+        Transaction.item_id == item_id,
+        Transaction.timestamp >= start_date,
+        Transaction.timestamp <= end_date
+    )
+
+    if filter_type:
+        # Adjust the filter to search for "Receive" within the type string
+        if 'Receive' in filter_type:
+            transactions_query = transactions_query.filter(Transaction.type.ilike(f"%{filter_type}%"))
+        else:
+            transactions_query = transactions_query.filter(Transaction.type == filter_type)
+        current_app.logger.info(f'Filter type applied: {filter_type}')
+
+    transactions = transactions_query.order_by(Transaction.timestamp.desc()).all()
+    return transactions
+
+
+from flask import jsonify, render_template, request
+
+@bp.route('/item_details/<int:item_id>', methods=['GET'])
+def item_details(item_id):
+    current_app.logger.info(f'Accessing item details for item_id: {item_id}')
+
+    # Fetch item and supplier information
+    item = Item.query.get_or_404(item_id)
+    supplier = Supplier.query.get(item.supplier_id)
+
+    # Parse filter parameters from the query string
+    filter_type = request.args.get('type', '')
+    start_date_str = request.args.get('start_date', '')
+    end_date_str = request.args.get('end_date', '')
+    month_range_str = request.args.get('month_range', '')
+
+    # Determine start and end dates
+    end_date = datetime.utcnow()
+    start_date = end_date - timedelta(days=180)  # Default to past 6 months
+    if start_date_str:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+    if end_date_str:
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+    if month_range_str:
+        try:
+            month_range = int(month_range_str)
+            start_date = end_date - timedelta(days=30 * month_range)
+        except ValueError:
+            pass  # Handle invalid month_range if necessary
+
+    # Call the filter function
+    transactions = filter_transactions(item_id, filter_type, start_date, end_date)
+
+    # Check if it's an AJAX request and return only the transactions part
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        # Return just the transaction history snippet (you'll need to create this template)
+        return render_template('transactions_snippet.html', transactions=transactions)
+
+    # Calculate average amount if the transaction type is 'Receive'
+    avg_amount = 0
+    if filter_type == 'Receive':
+        avg_amount_query = Transaction.query.filter(
+            Transaction.item_id == item_id,
+            Transaction.type == 'Receive',
+            Transaction.timestamp >= start_date,
+            Transaction.timestamp <= end_date
+        )
+        avg_amount = avg_amount_query.with_entities(func.avg(Transaction.amount)).scalar() or 0
+
+    # If it's a full page request, render the entire item details page
+    return render_template(
+        'item_details.html',
+        item=item,
+        transactions=transactions,
+        supplier=supplier,
+        avg_amount=avg_amount
+    )

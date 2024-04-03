@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="mb-4">Item Details</h2>
+    <div class="card mb-4">
+        <div class="card-header">{{ item.name }}</div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item"><strong>Description:</strong> {{ item.description }}</li>
+            <li class="list-group-item"><strong>Quantity in Stock:</strong> {{ item.quantity }}</li>
+            <li class="list-group-item"><strong>Booked Out:</strong> {{ item.booked_out }}</li>
+            <li class="list-group-item"><strong>Category:</strong> {{ item.category }}</li>
+            <li class="list-group-item"><strong>Supplier:</strong> {{ supplier.name }}</li>
+            <li class="list-group-item"><strong>Supplier Part No.:</strong> {{ item.supplier_part_no }}</li>
+            <li class="list-group-item"><strong>Invoice No.:</strong> {{ item.invoice_no }}</li>
+            <li class="list-group-item"><strong>Recent Price:</strong> {{ item.amount }}</li>
+            <li class="list-group-item"><strong>Average Price:</strong> {{ avg_amount | round(2) }}</li>
+            <li class="list-group-item"><strong>Bin Assignment:</strong> {{ item.bin_assignment }}</li>
+            <li class="list-group-item"><strong>Bulk Bin Assignment:</strong> {{ item.bulk_bin_assignment }}</li>
+            {% if item.image_filename %}
+            <li class="list-group-item">
+                <div class="text-center">
+                    <img src="{{ url_for('static', filename='img/item_images/' + item.image_filename) }}" alt="Item Image" class="img-fluid" style="max-width: 300px;">
+                </div>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+<button id="toggleHistory" class="btn btn-info mb-3">Show Transaction History</button>
+    <!-- Filter Form -->
+    <div id="transactionDetails" style="display: none;">
+    <div id="filterSection" class="mb-3">
+        <form id="filterForm" action="{{ url_for('inventory.item_details', item_id=item.id) }}" method="get">
+            <div class="form-group">
+                <label for="filterBy">Filter by:</label>
+                <select id="filterBy" name="filterBy" class="form-control">
+                    <option value="">Select Filter</option>
+                    <option value="dateRange">Date Range</option>
+                    <option value="transactionType">Transaction Type</option>
+                    <option value="months">Months</option>
+                </select>
+            </div>
+            <div id="dateRangeFields" class="form-group d-none">
+                <label>Start Date:</label>
+                <input type="date" name="start_date" class="form-control">
+                <label>End Date:</label>
+                <input type="date" name="end_date" class="form-control">
+            </div>
+            <div id="transactionTypeFields" class="form-group d-none">
+                <label>Transaction Type:</label>
+                <select name="type" class="form-control">
+                    <option value="">All Types</option>
+                    <option value="Receive">Receive</option>
+                    <option value="Book">Book</option>
+                    <option value="Write-Off">Write-Off</option>
+                </select>
+            </div>
+            <div id="monthsFields" class="form-group d-none">
+                <label>Months Range:</label>
+                <input type="number" name="month_range" class="form-control" placeholder="e.g., 2, 3">
+            </div>
+            <button type="submit" class="btn btn-primary">Filter</button>
+        </form>
+    </div>
+
+    <div id="activeFilters" class="mb-3">
+    <!-- Active filters will be inserted here by JavaScript -->
+    </div>
+    <!-- Transaction History -->
+    <div id="transactionHistory">
+        <h3>Transaction History (Past 6 Months)</h3>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Quantity</th>
+                        <th>Comments</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                    <tr>
+                        <td>{{ transaction.timestamp.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ transaction.type }}</td>
+                        <td>{{ transaction.quantity }}</td>
+                        <td>{{ transaction.comments }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    </div>
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/item_details.js') }}"></script>
+{% endblock %}

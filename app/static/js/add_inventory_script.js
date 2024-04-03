@@ -17,6 +17,45 @@
 
         initSearch();
         fetchCategories();
+        setupImageDisplayAndChange();
+    });
+
+    document.getElementById('item_image').addEventListener('change', function(event) {
+        if (this.files && this.files[0]) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                // Assuming there's an <img> element inside #itemImageDisplay for showing the image
+                var imgDisplay = document.querySelector('#itemImageDisplay img');
+                if (imgDisplay) {
+                    imgDisplay.src = e.target.result;
+                } else {
+                    // If no <img> exists, create one
+                    var newImg = document.createElement('img');
+                    newImg.src = e.target.result;
+                    newImg.style.maxWidth = "300px"; // Set the size as needed
+                    newImg.style.maxHeight = "300px";
+                    document.getElementById('itemImageDisplay').appendChild(newImg);
+                }
+                // Hide the upload form and show the change image button
+                document.getElementById('imageUploadForm').style.display = 'none';
+                var changeImageButton = document.getElementById('changeImageButton');
+                if (changeImageButton) {
+                    changeImageButton.style.display = 'block';
+                } else {
+                    // If the button doesn't exist, create it
+                    var newButton = document.createElement('button');
+                    newButton.textContent = 'Change Image';
+                    newButton.type = 'button';
+                    newButton.id = 'changeImageButton';
+                    newButton.addEventListener('click', function() {
+                        document.getElementById('imageUploadForm').style.display = 'block';
+                        this.style.display = 'none';
+                    });
+                    document.getElementById('itemImageDisplay').appendChild(newButton);
+                }
+            };
+            reader.readAsDataURL(this.files[0]);
+        }
     });
 
     function initSearch() {
@@ -69,22 +108,47 @@
     }
 
     function selectItem(item, searchType) {
-        document.getElementById('name').value = item.name;
-        document.getElementById('supplier_part_no').value = item.supplier_part_no;
-        // Fill the other fields as needed
-        document.getElementById('description').value = item.description;
+    document.getElementById('name').value = item.name;
+    document.getElementById('supplier_part_no').value = item.supplier_part_no;
+    // Fill the other fields as needed
+    document.getElementById('description').value = item.description;
+    document.getElementById('supplier_id').value = item.supplier_id;
+    document.getElementById('category').value = item.category;
 
-        // Assuming the supplier_id and category fields are select elements
-        // You may need to select the options by their values
-        document.getElementById('supplier_id').value = item.supplier_id;
-        document.getElementById('category').value = item.category;
+    // Hide the search results
+    document.getElementById('nameSearchResults').style.display = 'none';
+    document.getElementById('partNoSearchResults').style.display = 'none';
 
-        // Hide the search results again
-        document.getElementById('nameSearchResults').style.display = 'none';
-        document.getElementById('partNoSearchResults').style.display = 'none';
+    // Update the item image display
+    updateItemImageDisplay(item.image_filename);
+}
 
+function updateItemImageDisplay(imageFilename) {
+    const imageDisplayArea = document.getElementById('itemImageDisplay');
+    const imageUploadForm = document.getElementById('imageUploadForm');
 
+    if (imageFilename) {
+        // If there is an image, display it with a "Change Image" button
+        imageDisplayArea.innerHTML = `<img src="/static/img/item_images/${imageFilename}" alt="Item Image" style="max-width: 300px; max-height: 300px;">
+        <button type="button" id="changeImageButton">Change Image</button>`;
+        imageUploadForm.style.display = 'none'; // Hide upload form initially
+
+        document.getElementById('changeImageButton').addEventListener('click', function(event) {
+            event.preventDefault(); // Prevent any form submission
+            imageUploadForm.style.display = 'block'; // Show the upload form
+            this.style.display = 'none'; // Hide the "Change Image" button
+        });
+    } else {
+        // If no image, just show the upload field
+        imageDisplayArea.innerHTML = '';
+        imageUploadForm.style.display = 'block';
     }
+}
+
+function setupImageDisplayAndChange() {
+    const existingImageFilename = document.getElementById('existingImageFilename') ? document.getElementById('existingImageFilename').value : null;
+    updateItemImageDisplay(existingImageFilename);
+}
 
 
     function addNewCategory() {
